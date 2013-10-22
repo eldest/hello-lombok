@@ -18,68 +18,53 @@ import java.lang.reflect.Modifier;
 
 @ProviderFor(JavacAnnotationHandler.class)
 @SuppressWarnings("restriction")
-public class HandleHelloWorld implements JavacAnnotationHandler<HelloWorld>{
+public class HandleHelloWorld implements JavacAnnotationHandler<HelloWorld> {
 
-	public boolean handle(AnnotationValues<HelloWorld> annotation, JCAnnotation ast,
-			JavacNode annotationNode) {
-		JavacHandlerUtil.markAnnotationAsProcessed(annotationNode, HelloWorld.class);
-		JavacNode typeNode = annotationNode.up();
+    public boolean handle(AnnotationValues<HelloWorld> annotation, JCAnnotation ast, JavacNode annotationNode) {
+        JavacHandlerUtil.markAnnotationAsProcessed(annotationNode, HelloWorld.class);
+        JavacNode typeNode = annotationNode.up();
 
-		if(notAClass(typeNode)) {
-			annotationNode.addError("@HelloWorld is only supported on a class.");
-			return false;
-		}
+        if (notAClass(typeNode)) {
+            annotationNode.addError("@HelloWorld is only supported on a class.");
+            return false;
+        }
 
-		JCMethodDecl helloWorldMethod = createHelloWorld(typeNode);
-		JavacHandlerUtil.injectMethod(typeNode, helloWorldMethod);
-		return true;
-	}
+        JCMethodDecl helloWorldMethod = createHelloWorld(typeNode);
+        JavacHandlerUtil.injectMethod(typeNode, helloWorldMethod);
+        return true;
+    }
 
-	private boolean notAClass(JavacNode typeNode) {
-		JCClassDecl typeDecl = null;
-		if (typeNode.get() instanceof JCClassDecl) typeDecl = (JCClassDecl)typeNode.get();
-		long flags = typeDecl == null ? 0 : typeDecl.mods.flags;
-		boolean notAClass = typeDecl == null ||
-		  (flags & (Flags.INTERFACE | Flags.ENUM | Flags.ANNOTATION)) == 0;
-		return notAClass;
-	}
+    private boolean notAClass(JavacNode typeNode) {
+        JCClassDecl typeDecl = null;
+        if (typeNode.get() instanceof JCClassDecl) typeDecl = (JCClassDecl) typeNode.get();
+        long flags = typeDecl == null ? 0 : typeDecl.mods.flags;
+        return typeDecl == null || (flags & (Flags.INTERFACE | Flags.ENUM | Flags.ANNOTATION)) != 0;
+    }
 
-	public boolean isResolutionBased() {
-		return false;
-	}
+    public boolean isResolutionBased() {
+        return false;
+    }
 
-	private JCMethodDecl createHelloWorld(JavacNode type) {
-		TreeMaker treeMaker = type.getTreeMaker();
+    private JCMethodDecl createHelloWorld(JavacNode type) {
+        TreeMaker treeMaker = type.getTreeMaker();
 
-		JCModifiers           modifiers          = treeMaker.Modifiers(Modifier.PUBLIC);
-		List<JCTypeParameter> methodGenericTypes = List.<JCTypeParameter>nil();
-		JCExpression          methodType         = treeMaker.TypeIdent(TypeTags.VOID);
-		Name                  methodName         = type.toName("helloWorld");
-		List<JCVariableDecl>  methodParameters   = List.<JCVariableDecl>nil();
-		List<JCExpression>    methodThrows       = List.<JCExpression>nil();
+        JCModifiers modifiers = treeMaker.Modifiers(Modifier.PUBLIC);
+        List<JCTypeParameter> methodGenericTypes = List.<JCTypeParameter>nil();
+        JCExpression methodType = treeMaker.TypeIdent(TypeTags.VOID);
+        Name methodName = type.toName("helloWorld");
+        List<JCVariableDecl> methodParameters = List.<JCVariableDecl>nil();
+        List<JCExpression> methodThrows = List.<JCExpression>nil();
 
-		JCExpression printlnMethod =
-			JavacHandlerUtil.chainDots(treeMaker, type, "System", "out", "println");
-		List<JCExpression> printlnArgs = List.<JCExpression>of(treeMaker.Literal("hello world"));
-		JCMethodInvocation printlnInvocation =
-			treeMaker.Apply(List.<JCExpression>nil(), printlnMethod, printlnArgs);
-		JCBlock methodBody =
-			treeMaker.Block(0, List.<JCStatement>of(treeMaker.Exec(printlnInvocation)));
+        JCExpression printlnMethod = JavacHandlerUtil.chainDots(treeMaker, type, "System", "out", "println");
+        List<JCExpression> printlnArgs = List.<JCExpression>of(treeMaker.Literal("hello world"));
+        JCMethodInvocation printlnInvocation = treeMaker.Apply(List.<JCExpression>nil(), printlnMethod, printlnArgs);
+        JCBlock methodBody = treeMaker.Block(0, List.<JCStatement>of(treeMaker.Exec(printlnInvocation)));
 
-		JCExpression defaultValue = null;
+        JCExpression defaultValue = null;
 
-		return treeMaker.MethodDef(
-				modifiers,
-				methodName,
-				methodType,
-				methodGenericTypes,
-				methodParameters,
-				methodThrows,
-				methodBody,
-				defaultValue
-			);
-	}
-
+        return treeMaker.MethodDef(
+                modifiers, methodName, methodType, methodGenericTypes, methodParameters, methodThrows, methodBody, defaultValue);
+    }
 
 
 }
